@@ -1,21 +1,128 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<title>AI Job Agent</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Job Agent Portal</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #ecf0f1; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; }
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn { flex: 1; padding: 15px; font-size: 16px; font-weight: bold; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-start { background: #8e44ad; }
+        .btn-start:hover { background: #732d91; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        th, td { border: 1px solid #bdc3c7; padding: 12px; text-align: right; }
+        th { background-color: #34495e; color: white; }
+        .btn-action { padding: 8px 12px; margin: 2px; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 12px;}
+        .btn-pdf { background-color: #e74c3c; }
+        .btn-email { background-color: #27ae60; }
+        #status { text-align: center; font-size: 16px; color: #d35400; margin: 10px 0; font-weight: bold; }
+        .badge { background: #f39c12; color: #fff; padding: 3px 8px; border-radius: 12px; font-size: 11px;}
+    </style>
 </head>
 <body>
-<h1>AI Job Agent</h1>
-<button onclick="run()">Run Agent</button>
-<pre id="out"></pre>
+
+<div class="container">
+    <h1>🤖 بوابة الوكيل الذكي للوظائف (AI Job Agent)</h1>
+    
+    <div class="controls">
+        <button class="btn btn-start" onclick="triggerAgent()">🚀 تفعيل الوكيل للبحث الآن (Run AI Agent)</button>
+    </div>
+    
+    <div id="status"></div>
+    
+    <table id="jobsTable">
+        <thead>
+            <tr>
+                <th>المسمى الوظيفي</th>
+                <th>الشركة</th>
+                <th>الموقع</th>
+                <th>رابط التقديم</th>
+                <th>HR Email</th>
+                <th>إجراءات (Actions)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="6" style="text-align:center;">اضغط على الزر بالأعلى لبدء صيد الوظائف...</td></tr>
+        </tbody>
+    </table>
+</div>
 
 <script>
-async function run(){
- const r = await fetch('/api/run-agent',{method:'POST'})
- const d = await r.json()
- document.getElementById('out').textContent = JSON.stringify(d,null,2)
-}
+    async function triggerAgent() {
+        const statusEl = document.getElementById('status');
+        const tbody = document.querySelector('#jobsTable tbody');
+        
+        statusEl.innerText = "⏳ الوكيل الذكي يقوم الآن بتوليد الكلمات المفتاحية واستكشاف الوظائف... الرجاء الانتظار.";
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">جاري البحث العميق بالذكاء الاصطناعي...</td></tr>';
+
+        try {
+            const response = await fetch('/api/run-agent', { method: 'POST' });
+            const data = await response.json();
+
+            if(data.status === 'success' && data.jobs.length > 0) {
+                statusEl.innerText = `✅ اكتشف الوكيل ${data.jobs.length} وظيفة جديدة وتم حفظها بقاعدة البيانات.`;
+                tbody.innerHTML = ''; // تفريغ الجدول
+                
+                data.jobs.forEach(job => {
+                    const visaBadge = job.visaSponsorship ? '<span class="badge">Visa Sponsored</span>' : '';
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${job.title || '-'}</strong> ${visaBadge}</td>
+                        <td>${job.company || '-'}</td>
+                        <td>${job.country || '-'} / ${job.city || '-'}</td>
+                        <td><a href="${job.applyLink}" target="_blank">قدم الآن</a></td>
+                        <td>${job.hrEmail || 'N/A'}</td>
+                        <td>
+                            <button class="btn-action btn-pdf" onclick="downloadPDF('${job.title}', '${job.company}')">📄 تحميل Cover Letter</button>
+                            <button class="btn-action btn-email" onclick="sendEmail('${job.hrEmail}', '${job.title}', '${job.company}')">✉️ إرسال إيميل للـ HR</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                statusEl.innerText = "⚠️ انتهت الدورة ولم يتم العثور على وظائف جديدة مطابقة، حاول مرة أخرى.";
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">لا يوجد نتائج في هذه الدورة.</td></tr>';
+            }
+        } catch (error) {
+            statusEl.innerText = '❌ حدث خطأ في النظام: ' + error.message;
+        }
+    }
+
+    async function downloadPDF(title, company) {
+        alert('⏳ جاري تأليف الـ Cover Letter عبر Gemini AI وتحويله إلى PDF...');
+        try {
+            const response = await fetch('/api/generate-pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, company, skills:["IT", "Management", "Software Engineering"] })
+            });
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `CoverLetter_${company}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } catch (error) {
+            alert('❌ خطأ في توليد الـ PDF');
+        }
+    }
+
+    function sendEmail(email, title, company) {
+        if (!email || email === 'N/A' || email === '') {
+            alert('⚠️ البريد الإلكتروني غير متوفر لهذه الوظيفة.');
+            return;
+        }
+        const subject = encodeURIComponent(`Application for ${title} – ${company}`);
+        const body = encodeURIComponent(`Dear Hiring Manager at ${company},\n\nI am writing to express my interest in the ${title} position.\nPlease find my cover letter and resume attached.\n\nBest regards,\n[Your Name]`);
+        window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    }
 </script>
+
 </body>
 </html>
