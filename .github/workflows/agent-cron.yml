@@ -1,0 +1,37 @@
+name: Autonomous AI Job Agent
+
+on:
+  schedule:
+    # سيتم تشغيل الوكيل الذكي تلقائياً كل 6 ساعات
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # يتيح لك تشغيله يدوياً من واجهة GitHub
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Create execution script
+        run: |
+          echo "const JobResearchAgent = require('./ai-agent.js');
+          const agent = new JobResearchAgent();
+          agent.runFullCycle().then(() => {
+            console.log('Cron Job Completed Successfully');
+            process.exit(0);
+          }).catch(err => {
+            console.error('Error in Cron Job:', err);
+            process.exit(1);
+          });" > run-now.js
+
+      - name: Execute AI Agent
+        run: node run-now.js
