@@ -1,0 +1,21 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>AI Job Agent</title>
+</head>
+<body>
+<h1>AI Job Agent</h1>
+<button onclick="run()">Run Agent</button>
+<pre id="out"></pre>
+
+<script>
+async function run(){
+ const r = await fetch('/api/run-agent',{method:'POST'})
+ const d = await r.json()
+ document.getElementById('out').textContent = JSON.stringify(d,null,2)
+}
+</script>
+</body>
+</html>
