@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const PDFDocument = require('pdfkit');
+const axios = require('axios');
 const JobResearchAgent = require('../ai-agent'); // استدعاء الوكيل الذكي
 
 const app = express();
